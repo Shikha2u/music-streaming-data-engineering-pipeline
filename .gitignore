@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.db
+.Rhistory
+.Rproj.user/
+*.ipynb_checkpoints/
+spot_proj/
+node_modules/

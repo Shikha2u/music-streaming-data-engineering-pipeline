@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Listener Interface - Spotify Database{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-section">
+        <h1 class="section-title">Discover Music</h1>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.unique_songs_played if stats else 0 }}</div>
+                <div class="stat-label">Songs Played</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_interactions if stats else 0 }}</div>
+                <div class="stat-label">Total Interactions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.artists_followed if stats else 0 }}</div>
+                <div class="stat-label">Artists Followed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.genres_explored if stats else 0 }}</div>
+                <div class="stat-label">Genres Explored</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dashboard-section">
+            <div class="tabs">
+            <button class="tab active" onclick="switchTab('new')">recently released song(in past 30 days)</button>
+            <button class="tab" onclick="switchTab('followed')">Followed Artists</button>
+            <button class="tab" onclick="switchTab('recommendations')">Recommendations</button>
+            <button class="tab" onclick="switchTab('library')">My Library</button>
+        </div>
+
+        <!-- New Releases Tab -->
+        <div id="new" class="tab-content active">
+            <div class="card">
+                <h3 class="card-title">recently released song(in past 30 days)</h3>
+                <div class="song-list">
+                    {% for song in new_songs %}
+                    <div class="song-item">
+                        <div class="song-info">
+                            <span class="song-number">{{ loop.index }}</span>
+                            <div>
+                                <div class="song-title">{{ song.song_name }}</div>
+                                <div class="song-artist">{{ song.artists }}</div>
+                            </div>
+                        </div>
+                        <div class="song-actions">
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'play')" title="Play">▶</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'like')" title="Like">♡</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'share')" title="Share">↗</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Followed Artists Tab -->
+        <div id="followed" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">Songs from Artists You Follow</h3>
+                {% if followed_songs %}
+                <div class="song-list">
+                    {% for song in followed_songs %}
+                    <div class="song-item">
+                        <div class="song-info">
+                            <span class="song-number">{{ loop.index }}</span>
+                            <div>
+                                <div class="song-title">{{ song.song_name }}</div>
+                                <div class="song-artist">{{ song.artist_name }}</div>
+                            </div>
+                        </div>
+                        <div class="song-actions">
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'play')" title="Play">▶</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'like')" title="Like">♡</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'share')" title="Share">↗</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: var(--spotify-text-secondary); padding: 2rem; text-align: center;">
+                    No songs from followed artists. Follow some artists to see their latest releases!
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">Recommended for You</h3>
+                <p style="color: var(--spotify-text-secondary); margin-top: 0.5rem;">Logic: showing songs from genres you have liked.</p>
+                {% if recommendations %}
+                {# Group recommendations by genre using Jinja's groupby #}
+                {% for group in recommendations|groupby('genre') %}
+                <h4 style="margin-top:1rem; margin-bottom:0.5rem;">{{ group.grouper or 'Unknown Genre' }}</h4>
+                <div class="song-list">
+                    {% for song in group.list %}
+                    <div class="song-item">
+                        <div class="song-info">
+                            <span class="song-number">{{ loop.index }}</span>
+                            <div>
+                                <div class="song-title">{{ song.song_name }}</div>
+                                <div class="song-artist">{{ song.artists }}</div>
+                            </div>
+                        </div>
+                        <div class="song-actions">
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'play')" title="Play">▶</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'like')" title="Like">♡</button>
+                            <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'share')" title="Share">↗</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="color: var(--spotify-text-secondary); padding: 2rem; text-align: center;">
+                    Start listening to songs to get personalized recommendations!
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- My Library Tab -->
+        <div id="library" class="tab-content">
+            <div class="grid grid-3">
+                <div class="card">
+                    <h3 class="card-title">Followed Artists</h3>
+                    {% if followed_artists %}
+                    <div class="song-list">
+                        {% for artist in followed_artists %}
+                        <div class="song-item">
+                            <div class="song-info">
+                                <div>
+                                    <div class="song-title">{{ artist.artist_first_name }} {{ artist.artist_last_name }}</div>
+                                    <div class="song-artist">Following since {{ artist.follow_date }}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-small" onclick="unfollowArtist({{ artist.artist_id }})">Unfollow</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="color: var(--spotify-text-secondary); padding: 2rem; text-align: center;">
+                        You're not following any artists yet.
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Follow New Artists</h3>
+                    <div id="artists-list" style="max-height: 400px; overflow-y: auto;">
+                        <p style="color: var(--spotify-text-secondary);">Loading artists...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Liked Songs</h3>
+                    {% if liked_songs %}
+                    <div class="song-list">
+                        {% for song in liked_songs %}
+                        <div class="song-item">
+                            <div class="song-info">
+                                <div>
+                                    <div class="song-title">{{ song.song_name }}</div>
+                                    <div class="song-artist">Liked at {{ song.liked_at }}</div>
+                                </div>
+                            </div>
+                            <div class="song-actions">
+                                <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'play')" title="Play">▶</button>
+                                <button class="btn-icon" onclick="interactSong({{ song.song_id }}, 'share')" title="Share">↗</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="color: var(--spotify-text-secondary); padding: 2rem; text-align: center;">
+                        You haven't liked any songs yet.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+}
+
+async function interactSong(songId, type) {
+    const response = await fetch('/listener/api/interact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ song_id: songId, interaction_type: type })
+    });
+    
+    if (response.ok) {
+        const messages = {
+            'play': '✓ Song played!',
+            'like': '✓ Song liked!',
+            'share': '✓ Song shared!'
+        };
+        alert(messages[type] || 'Interaction recorded!');
+    } else {
+        alert('Failed to record interaction');
+    }
+}
+
+async function followArtist(artistId) {
+    const response = await fetch('/listener/api/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist_id: artistId })
+    });
+    
+    if (response.ok) {
+        alert('✓ Now following artist!');
+        location.reload();
+    } else {
+        alert('Failed to follow artist');
+    }
+}
+
+async function unfollowArtist(artistId) {
+    if (!confirm('Unfollow this artist?')) return;
+    
+    const response = await fetch('/listener/api/unfollow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist_id: artistId })
+    });
+    
+    if (response.ok) {
+        alert('✓ Unfollowed artist');
+        location.reload();
+    } else {
+        alert('Failed to unfollow artist');
+    }
+}
+
+// Load artists list
+fetch('/api/artists')
+    .then(r => r.json())
+    .then(artists => {
+        const container = document.getElementById('artists-list');
+        container.innerHTML = '';
+        artists.slice(0, 20).forEach(artist => {
+            const div = document.createElement('div');
+            div.className = 'song-item';
+            div.innerHTML = `
+                <div class="song-info">
+                    <div>
+                        <div class="song-title">${artist.artist_first_name} ${artist.artist_last_name}</div>
+                        <div class="song-artist">${artist.country || 'N/A'} • ${artist.genre || 'N/A'}</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-small" onclick="followArtist(${artist.artist_id})">Follow</button>
+            `;
+            container.appendChild(div);
+        });
+    });
+</script>
+{% endblock %}
+

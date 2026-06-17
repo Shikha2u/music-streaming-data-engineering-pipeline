@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Spotify Database{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">S</div>
+            <h1>Spotify Database</h1>
+            <p style="color: var(--spotify-text-secondary); margin-top: 0.5rem;">
+                Artist Dashboard & Listener Interface
+            </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{{ url_for('login') }}" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                Get Started
+            </a>
+        </div>
+        
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--spotify-gray);">
+            <h3 style="margin-bottom: 1rem; color: var(--spotify-white);">Features</h3>
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div>
+                    <h4 style="color: var(--spotify-green); margin-bottom: 0.5rem;">For Artists</h4>
+                    <ul style="list-style: none; color: var(--spotify-text-secondary);">
+                        <li>✓ Upload Songs</li>
+                        <li>✓ View Performance</li>
+                        <li>✓ Track Followers</li>
+                        <li>✓ Analytics Dashboard</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--spotify-green); margin-bottom: 0.5rem;">For Listeners</h4>
+                    <ul style="list-style: none; color: var(--spotify-text-secondary);">
+                        <li>✓ Discover Music</li>
+                        <li>✓ Follow Artists</li>
+                        <li>✓ Get Recommendations</li>
+                        <li>✓ Track Listening</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

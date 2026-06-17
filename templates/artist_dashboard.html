@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Artist Dashboard - Spotify Database{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-section">
+        <h1 class="section-title">Artist Dashboard</h1>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">{{ artist.artist_first_name }} {{ artist.artist_last_name }}</h2>
+                <button class="btn btn-secondary btn-small" onclick="showUploadModal()">Upload Song</button>
+            </div>
+            <div class="grid grid-2">
+                <div>
+                    <p><strong>Country:</strong> {{ artist.country or 'N/A' }}</p>
+                    <p><strong>Genre:</strong> {{ artist.genre or 'N/A' }}</p>
+                </div>
+                <div>
+                    <p><strong>Join Date:</strong> {{ artist.join_date or 'N/A' }}</p>
+                    <p><strong>Bio:</strong> {{ artist.bio or 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="dashboard-section">
+        <h2 class="section-title">Overview</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ follower_stats.total_followers if follower_stats else 0 }}</div>
+                <div class="stat-label">Total Followers</div>
+            </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ recent_releases if recent_releases is not none else (follower_stats.new_followers_30d if follower_stats else 0) }}</div>
+                    <div class="stat-label">YOUR NEW RELEASE(30 DAYS)</div>
+                </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ song_performance|length if song_performance else 0 }}</div>
+                <div class="stat-label">Total Songs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dashboard-section">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('performance')">Performance</button>
+            <button class="tab" onclick="switchTab('demographics')">Demographics</button>
+            <button class="tab" onclick="switchTab('growth')">Growth</button>
+        </div>
+
+        <!-- Performance Tab -->
+        <div id="performance" class="tab-content active">
+            <div class="card">
+                <h3 class="card-title">Top Songs</h3>
+                <p style="color: var(--spotify-text-secondary); margin-top: 0.25rem; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                    Top songs are ranked by <strong>total interactions</strong> (plays + likes + shares), with the most
+                    interactions listed first.
+                </p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Song Name</th>
+                            <th>Plays</th>
+                            <th>Likes</th>
+                            <th>Shares</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for song in top_songs %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ song.song_name }}</td>
+                            <td>{{ song.plays }}</td>
+                            <td>{{ song.likes }}</td>
+                            <td>{{ song.shares }}</td>
+                            
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">All Songs Performance</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Song Name</th>
+                            <th>Plays</th>
+                            <th>Likes</th>
+                            <th>Shares</th>
+                            <th>Skips</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for song in song_performance %}
+                        <tr>
+                            <td>{{ song.song_name }}</td>
+                            <td>{{ song.total_plays }}</td>
+                            <td>{{ song.total_likes }}</td>
+                            <td>{{ song.total_shares }}</td>
+                            <td>{{ song.total_skips }}</td>
+                            
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Demographics Tab -->
+        <div id="demographics" class="tab-content">
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3 class="card-title">Country Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="countryChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Age Group Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Gender Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Growth Tab -->
+        <div id="growth" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">Monthly Follower Growth</h3>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab removed per request -->
+    </div>
+</div>
+
+<!-- Upload Song Modal -->
+<div id="uploadModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="login-card" style="max-width: 500px; margin: 0;">
+        <div class="card-header">
+            <h2 class="card-title">Upload New Song</h2>
+            <button class="btn-icon" onclick="closeUploadModal()" style="font-size: 1.5rem;">×</button>
+        </div>
+        <form id="uploadForm">
+            <div class="form-group">
+                <label class="form-label">Song Name *</label>
+                <input type="text" name="song_name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Duration (seconds)</label>
+                <input type="number" name="duration" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Genre</label>
+                <input type="text" name="genre" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Release Date (YYYY-MM-DD)</label>
+                <input type="date" name="release_date" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Song</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+}
+
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+}
+
+// Load demographic charts
+fetch('/artist/api/country-distribution')
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('countryChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.country || 'Unknown'),
+                datasets: [{
+                    label: 'Listeners',
+                    data: data.map(d => d.unique_listeners),
+                    backgroundColor: '#1DB954'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#b3b3b3' }, grid: { color: '#282828' } },
+                    x: { ticks: { color: '#b3b3b3' }, grid: { color: '#282828' } }
+                }
+            }
+        });
+    });
+
+fetch('/artist/api/age-distribution')
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('ageChart'), {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.age_group),
+                datasets: [{
+                    data: data.map(d => d.unique_listeners),
+                    backgroundColor: ['#1DB954', '#1ed760', '#1DB954', '#1ed760', '#1DB954', '#1ed760']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#b3b3b3' } }
+                }
+            }
+        });
+    });
+
+fetch('/artist/api/gender-distribution')
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('genderChart'), {
+            type: 'pie',
+            data: {
+                labels: data.map(d => d.gender),
+                datasets: [{
+                    data: data.map(d => d.unique_listeners),
+                    backgroundColor: ['#1DB954', '#1ed760', '#1DB954']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#b3b3b3' } }
+                }
+            }
+        });
+    });
+
+fetch('/artist/api/monthly-growth')
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('growthChart'), {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.follow_month),
+                datasets: [{
+                    label: 'New Followers',
+                    data: data.map(d => d.new_follows),
+                    borderColor: '#1DB954',
+                    backgroundColor: 'rgba(29, 185, 84, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Previous Month',
+                    data: data.map(d => d.previous_month_follows),
+                    borderColor: '#b3b3b3',
+                    backgroundColor: 'rgba(179, 179, 179, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#b3b3b3' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#b3b3b3' }, grid: { color: '#282828' } },
+                    x: { ticks: { color: '#b3b3b3' }, grid: { color: '#282828' } }
+                }
+            }
+        });
+    });
+
+// Upload form handler
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    const response = await fetch('/artist/upload-song', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+        alert('Song uploaded successfully!');
+        location.reload();
+    } else {
+        alert('Failed to upload song');
+    }
+});
+</script>
+{% endblock %}
+

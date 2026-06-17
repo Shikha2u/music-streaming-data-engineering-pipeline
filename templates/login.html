@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Spotify Database{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">S</div>
+            <h1>Login</h1>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label class="form-label">Login As</label>
+                <select name="user_type" class="form-control" required>
+                    <option value="">Select User Type</option>
+                    <option value="artist">Artist</option>
+                    <option value="listener">Listener</option>
+                </select>
+            </div>
+
+            <div id="artist-fields" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Artist ID</label>
+                    <input type="number" name="artist_id" class="form-control" placeholder="Enter Artist ID">
+                </div>
+            </div>
+
+            <div id="listener-fields" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="Enter Email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">OR Listener ID</label>
+                    <input type="number" name="listener_id" class="form-control" placeholder="Enter Listener ID">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                Login
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{{ url_for('index') }}" class="nav-link">Back to Home</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelector('select[name="user_type"]').addEventListener('change', function() {
+    const userType = this.value;
+    document.getElementById('artist-fields').style.display = userType === 'artist' ? 'block' : 'none';
+    document.getElementById('listener-fields').style.display = userType === 'listener' ? 'block' : 'none';
+});
+</script>
+{% endblock %}
+
